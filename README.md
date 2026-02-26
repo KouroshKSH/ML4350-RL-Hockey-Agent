@@ -8,8 +8,6 @@ This repository contains our contribution to the Reinforcement Learning Tourname
 
 Our project focuses on training hockey agents to play the [Laser Hockey](https://github.com/antic11d/laser-hockey-env.git) game using off-policy algorithms and multi-agent training system.
 
-![Laser Hockey Gameplay](assets/gameplay.gif "ShaBin Agent Gameplay")
-
 ## Tournament Results
 Out of the competing teams, our solution was awarded **5th place**. 
 
