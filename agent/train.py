@@ -564,6 +564,10 @@ def train():
     # terminal reward (applied only on done steps; winner is in {-1,0,1})
     terminal_win_reward = float(reward_cfg.get("terminal_win_reward", 10.0))
 
+    # allow asymmetric loss penalty and optional tie reward
+    terminal_loss_penalty = float(reward_cfg.get("terminal_loss_penalty", terminal_win_reward))
+    terminal_tie_reward   = float(reward_cfg.get("terminal_tie_reward", 0.0))
+
     # proxy terms (bounded / scaled)
     closeness_weight = float(reward_cfg.get("closeness_weight", 0.25))
     touch_bonus = float(reward_cfg.get("touch_bonus", 1.0))
@@ -859,8 +863,11 @@ def train():
 
         # phase reward overrides
         reward_cfg_ep = _merge_reward_cfg(reward_cfg, phase)
-        terminal_win_reward_ep = float(reward_cfg_ep.get("terminal_win_reward", terminal_win_reward))
+        terminal_win_reward_ep  = float(reward_cfg_ep.get("terminal_win_reward", terminal_win_reward))
+        terminal_loss_penalty_ep = float(reward_cfg_ep.get("terminal_loss_penalty", terminal_loss_penalty))
+        terminal_tie_reward_ep   = float(reward_cfg_ep.get("terminal_tie_reward", terminal_tie_reward))
         closeness_w_ep = float(reward_cfg_ep.get("closeness_weight", closeness_weight))
+
         touch_bonus_ep = float(reward_cfg_ep.get("touch_bonus", touch_bonus))
         opp_touch_w_ep = float(reward_cfg_ep.get("opp_touch_weight", opp_touch_weight))
 
@@ -905,8 +912,16 @@ def train():
             # shaped reward (bounded, self-play friendly)
             info2 = env.get_info_agent_two()
 
-            # terminal component (winner is 0 until done)
-            shaped_reward = terminal_win_reward_ep * float(info.get("winner", 0.0))
+            # terminal component (applied only when done; winner is 0 until done)
+            shaped_reward = 0.0
+            if done:
+                w = int(info.get("winner", 0))
+                if w == 1:
+                    shaped_reward += terminal_win_reward_ep
+                elif w == -1:
+                    shaped_reward -= terminal_loss_penalty_ep
+                else:
+                    shaped_reward += terminal_tie_reward_ep
 
             # scaled defensive urgency proxy (negative in own-half danger situations)
             shaped_reward += closeness_w_ep * float(info.get("reward_closeness_to_puck", 0.0))
@@ -921,7 +936,7 @@ def train():
                 phi_next = float(next_obs[12]) / 5.0
                 shaped_reward += progress_w_ep * (gamma_float * phi_next - phi)
 
-            # velocity proxy (keep small if using progress shaping)
+            # velocity proxy
             shaped_reward += puck_dir_w_ep * float(info.get("reward_puck_direction", 0.0))
 
             # gated shot bonus to learn "good" shots without shoot-spam
@@ -935,7 +950,40 @@ def train():
             # action regularization
             shaped_reward -= action_l2_w_ep * float(np.sum(np.square(a1)))
 
-            # extra safety penalty (keep disabled if the above is used)
+            # speed shaping
+            speed_cfg = reward_cfg_ep.get("speed", {}) or {}
+            speed_enabled = bool(speed_cfg.get("enabled", False))
+            speed_to_puck_w = float(speed_cfg.get("to_puck_weight", 0.0))   # e.g. 0.02
+            accel_w = float(speed_cfg.get("accel_weight", 0.0))             # e.g. 0.01
+            gate_danger_only = bool(speed_cfg.get("danger_only", True))
+
+            if speed_enabled:
+                # player1 kinematics from obs
+                p_pos = obs[0:2]
+                p_vel = obs[3:5]
+
+                puck_pos = obs[12:14]
+                to_puck = puck_pos - p_pos
+                dist = float(np.linalg.norm(to_puck)) + 1e-8
+                dir_to_puck = to_puck / dist
+
+                closing_speed = float(np.dot(p_vel, dir_to_puck))
+                closing_speed = max(0.0, closing_speed)
+
+                # only apply in "danger" situations similar to the danger penalty
+                ok = True
+                if gate_danger_only:
+                    ok = (obs[12] < danger_x_ep and obs[14] < danger_vx_ep)
+
+                if ok:
+                    shaped_reward += speed_to_puck_w * closing_speed
+
+                    # optional acceleration reward
+                    next_vel = next_obs[3:5]
+                    accel = float(np.linalg.norm(next_vel) - np.linalg.norm(p_vel))
+                    shaped_reward += accel_w * max(0.0, accel)
+
+            # extra safety penalty
             if danger_enabled_ep:
                 if obs[12] < danger_x_ep and obs[14] < danger_vx_ep:
                     shaped_reward -= danger_w_ep
