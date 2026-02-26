@@ -1,0 +1,214 @@
+algo: "TQC"
+env: "hockey_rand_start_cond_player1"
+user: "Kourosh"
+seed: 42
+rand_start_cond_player1: true
+
+step_count: 250
+action_dim: 4
+
+gamma: 0.99
+tau: 0.005
+
+# For TQC in this codebase: noise > 0 => stochastic rollouts, noise == 0 => deterministic rollouts.
+noise: 1.0
+
+lr: 0.0002
+batch_size: 256
+buffer_size: 1000000
+window_size: 100
+
+# More stable for off-policy + self-play
+warmup_steps: 10000
+updates_per_step: 3
+checkpoint_interval_episodes: 200
+
+tqc:
+  n_critics: 5
+  n_quantiles: 25
+  top_quantiles_to_drop: 2
+  alpha: "auto"
+  init_alpha: 0.2
+  actor_lr: 0.0002
+  critic_lr: 0.0002
+  target_entropy: null
+
+obs_norm:
+  enabled: true
+  clip: 5.0
+  update: true
+
+symmetry:
+  enabled: true
+  mode: "flip_y"
+  prob: 0.5
+
+opponent_mix:
+  weak: 0.35
+  strong: 0.35
+  self_play: 0.30
+
+self_play:
+  enabled: true
+  # Align with end of Phase 2 (bots anchor)
+  snapshot_start_episode: 1200
+  snapshot_interval_episodes: 200
+  max_pool_size: 20
+  elite_size: 5
+  sample_uniform_prob: 0.10
+  ucb_beta: 0.50
+  deterministic_opponent: true
+  sampling: "pfsp_mid"
+  pfsp_power: 1.0
+  pfsp_target: 0.5
+  pfsp_temperature: 0.15
+  discount_stats: true
+  discount_factor: 0.997
+
+curriculum:
+  enabled: true
+  # Smoother transition into self-play
+  self_play_ramp_episodes: 1000
+
+psro:
+  enabled: true
+  # Start after self-play snapshots begins
+  start_episode: 3500
+  update_interval_episodes: 300
+  max_league_size: 6
+  games_per_match: 3
+  replicator_iters: 200
+  replicator_lr: 2.0
+  uniform_prob: 0.10
+  step_count: 250
+
+reward:
+  terminal_win_reward: 10.0
+  closeness_weight: 1.6
+
+  touch_bonus: 0.6
+  opp_touch_weight: 0.0
+
+  use_potential_shaping: false
+  progress_weight: 0.0
+
+  puck_direction_weight: 0.1
+
+  shot_bonus: 0.0
+  shot_gate_x: 0.0
+  shot_gate_vx: 0.0
+  shot_gate_abs_y: 1.5
+
+  action_l2_weight: 0.0005
+
+  danger:
+    enabled: false
+    weight: 0.05
+    x_threshold: -10.0
+    vx_threshold: -0.1
+
+eval:
+  enabled: true
+  interval_episodes: 200
+  episodes_per_opponent: 50
+  opponents: ["weak", "strong", "self_play"]
+
+wandb_project: "RL-hockey-rand-env"
+
+episodes: 5000
+phases:
+  - name: phase1_shooting
+    until_episode: 400
+    env_mode: TRAIN_SHOOTING
+    step_count: 150 # Increased from 80 because random starts need more time to recover
+    reward_overrides:
+      touch_bonus: 0.7
+      puck_direction_weight: 0.2
+      shot_bonus: 0.05
+    noise: 1.0
+    opponent_mix:
+      weak: 0.3
+      strong: 0.7
+      self_play: 0.0
+
+  - name: phase1_defense
+    until_episode: 800
+    env_mode: TRAIN_DEFENSE
+    step_count: 150
+    noise: 1.0
+    opponent_mix:
+      weak: 0.2
+      strong: 0.8
+      self_play: 0.0
+
+  - name: phase2_bots_anchor
+    until_episode: 1500
+    env_mode: NORMAL
+    step_count: 300
+    noise: 1.0
+    reward_overrides:
+      opp_touch_weight: 0.3
+    opponent_mix:
+      weak: 0.25
+      strong: 0.75
+      self_play: 0.0
+
+  - name: phase3_league_pfsp_mid
+    until_episode: 2500
+    env_mode: NORMAL
+    step_count: 350
+    noise: 1.0
+    reward_overrides:
+      use_potential_shaping: true
+      progress_weight: 0.5
+      opp_touch_weight: 0.5
+    opponent_mix:
+      self_play: 0.4
+      weak: 0.2
+      strong: 0.4
+    self_play_sampling: pfsp_mid
+
+  - name: phase3_league_ucb_cover
+    until_episode: 3500
+    env_mode: NORMAL
+    step_count: 350
+    noise: 1.0
+    reward_overrides:
+      use_potential_shaping: true
+      progress_weight: 0.5
+      opp_touch_weight: 0.6
+    opponent_mix:
+      self_play: 0.5
+      weak: 0.15
+      strong: 0.35
+    self_play_sampling: ucb
+
+  - name: phase4_league_psro
+    until_episode: 4500
+    env_mode: NORMAL
+    step_count: 400
+    noise: 1.0
+    reward_overrides:
+      use_potential_shaping: true
+      progress_weight: 0.5
+      opp_touch_weight: 0.7
+    opponent_mix:
+      self_play: 0.6
+      weak: 0.1
+      strong: 0.3
+    self_play_sampling: meta
+
+  - name: phase5_polish_deterministic
+    until_episode: 5000
+    env_mode: NORMAL
+    step_count: 400
+    noise: 0.0
+    reward_overrides:
+      use_potential_shaping: true
+      progress_weight: 0.5
+      opp_touch_weight: 0.7
+    opponent_mix:
+      self_play: 0.6
+      weak: 0.1
+      strong: 0.3
+    self_play_sampling: meta

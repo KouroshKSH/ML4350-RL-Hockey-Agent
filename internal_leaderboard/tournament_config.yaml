@@ -1,0 +1,19 @@
+# List the relative paths from the results folder
+# Format: "Run_Folder_Name": "Display_Name"
+agents:
+  "TQC/hockey/Kourosh_seed43/20260209_211705": "TQC_seed43_ep2000_selfplayT_phase4_20260209_211705"
+  "TQC/hockey/Kourosh_seed45/20260209_201948": "TQC_seed45_ep10000_selfplayT_phase4_20260209_201948"
+  "TQC/hockey/Kourosh_seed44/20260209_201948": "TQC_seed44_ep10000_selfplayT_phase4_20260209_201948"
+  "TQC/hockey/Kourosh_seed43/20260209_201948": "TQC_seed43_ep10000_selfplayT_phase4_20260209_201948"
+  "TQC/hockey/2026-02-10_19-49-16_Kourosh_seed45": "TQC_seed45_ep10000_selfplayT_phase4_20260210_194916"
+  "TQC/hockey/2026-02-10_19-49-16_Kourosh_seed44": "TQC_seed44_ep10000_selfplayT_phase4_20260210_194916"
+  "TQC/hockey/2026-02-10_19-49-16_Kourosh_seed43": "TQC_seed43_ep10000_selfplayT_phase4_20260210_194916"
+  "TQC/hockey/2026-02-10_15-09-45_Kourosh_seed43": "TQC_seed43_ep3000_selfplayT_phase4_20260210_150945"
+  "TQC/hockey/2026-02-10_15-09-45_Kourosh_seed44": "TQC_seed44_ep3000_selfplayT_phase4_20260210_150945"
+  # Add more here as you train them
+
+settings:
+  games_per_match: 20
+  save_trajectories: true
+  save_every_n_games: 10 # if 5, save 2 games per 10-game match
+  num_workers: 10 # Number of CPU cores to use for parallel games

@@ -1,0 +1,298 @@
+algo: "TD3"
+env: "hockey"
+user: "user"
+seed: 10
+
+# Total training budget
+episodes: 55000
+step_count: 250
+action_dim: 4
+
+gamma: 0.99
+tau: 0.005
+
+lr: 0.0003
+batch_size: 256
+buffer_size: 500000
+window_size: 100
+
+warmup_steps: 20000
+updates_per_step: 1
+checkpoint_interval_episodes: 200
+
+# Default exploration noise scale. In TD3, this is an amplitude
+noise: 0.12
+
+exploration:
+  type: "pink"
+  pink_rows: 16
+  reset_each_episode: true
+
+td3:
+  policy_noise: 0.2
+  noise_clip: 0.5
+  policy_delay: 2
+
+obs_norm:
+  enabled: true
+  clip: 5.0
+  update: true
+
+symmetry:
+  enabled: true
+  mode: "flip_y"
+  prob: 0.5
+
+opponent_mix:
+  weak: 0.35
+  strong: 0.35
+  self_play: 0.30
+  external: 0.0
+  
+self_play:
+  enabled: true
+  snapshot_start_episode: 7500
+  snapshot_interval_episodes: 200
+  max_pool_size: 30
+  elite_size: 5
+
+  sample_uniform_prob: 0.10
+  ucb_beta: 0.50
+
+  deterministic_opponent: true
+
+  # Default sampling mode (phases override it)
+  sampling: "pfsp_mid"
+  pfsp_power: 1.0
+  pfsp_target: 0.5
+  pfsp_temperature: 0.15
+
+  discount_stats: true
+  discount_factor: 0.997
+
+curriculum:
+  enabled: true
+  self_play_ramp_episodes: 2500
+
+psro:
+  enabled: true
+  start_episode: 6500
+  update_interval_episodes: 600
+  max_league_size: 6
+  games_per_match: 3
+  replicator_iters: 200
+  replicator_lr: 2.0
+  uniform_prob: 0.10
+  step_count: 250
+
+external_pool:
+  enabled: true
+  results_root: "results"      
+  env_name: "hockey"              # matches results/<ALGO>/<env_name>/
+  score_threshold: 0.86
+  algos: ["SAC", "TD3", "TQC"]  
+  include_segments: ["best", "mid", "late"]  
+  max_models: 120   
+  max_per_run: 10   
+  require_norm: true   
+
+  # pool sampling / stats (same as self-play)
+  sampling: "pfsp_mid"            # default. can be overridden per phase 
+  pfsp_power: 1.0
+  pfsp_target: 0.5
+  pfsp_temperature: 0.15
+  sample_uniform_prob: 0.10
+  ucb_beta: 0.50
+  discount_stats: true
+  discount_factor: 0.995
+
+  start_episode: 12000
+  ramp_episodes: 12000
+
+  deterministic_opponent: true    # for SAC/TQC: use mean action
+  follow_self_play_sampling: true
+
+  min_models: 20
+
+
+reward:
+  terminal_win_reward: 10.0
+  closeness_weight: 1.0
+
+  touch_bonus: 0.5
+  opp_touch_weight: 0.0
+
+  use_potential_shaping: false
+  progress_weight: 0.0
+
+  puck_direction_weight: 0.1
+
+  shot_bonus: 0.0
+  shot_gate_x: 0.0
+  shot_gate_vx: 0.0
+  shot_gate_abs_y: 1.5
+
+  action_l2_weight: 0.0005
+
+  danger:
+    enabled: false
+    weight: 0.05
+    x_threshold: -10.0
+    vx_threshold: -0.1
+
+eval:
+  enabled: true
+  interval_episodes: 200
+  episodes_per_opponent: 100
+  opponents: ["weak", "strong", "self_play"]
+
+wandb_project: "RL-hockey-V2"
+
+phases:
+  - name: phase1_shooting
+    until_episode: 1000
+    env_mode: TRAIN_SHOOTING
+    step_count: 80
+    noise: 0.18
+    reward_overrides:
+      touch_bonus: 0.7
+      puck_direction_weight: 0.2
+      shot_bonus: 0.05
+    opponent_mix:
+      weak: 0.0
+      strong: 1.0
+      self_play: 0.0
+      external: 0.0
+
+  - name: phase1_defense
+    until_episode: 2000
+    env_mode: TRAIN_DEFENSE
+    step_count: 80
+    noise: 0.15
+    opponent_mix:
+      weak: 0.0
+      strong: 1.0
+      self_play: 0.0
+      external: 0.0
+
+  - name: phase2_bots_anchor
+    until_episode: 7500
+    env_mode: NORMAL
+    step_count: 250
+    noise: 0.12
+    reward_overrides:
+      opp_touch_weight: 0.3
+    opponent_mix:
+      weak: 0.3
+      strong: 0.7
+      self_play: 0.0
+      external: 0.0
+      
+  - name: phase3_league_pfsp_mid
+    until_episode: 15000
+    env_mode: NORMAL
+    step_count: 300
+    noise: 0.10
+    reward_overrides:
+      use_potential_shaping: true
+      progress_weight: 0.5
+      opp_touch_weight: 0.5
+      closeness_weight: 1.2
+    opponent_mix:
+      self_play: 0.40
+      weak: 0.18
+      strong: 0.37
+      external: 0.05
+    self_play_sampling: pfsp_mid
+
+  - name: phase3_league_ucb_cover
+    until_episode: 25000
+    env_mode: NORMAL
+    step_count: 300
+    noise: 0.09
+    reward_overrides:
+      use_potential_shaping: true
+      progress_weight: 0.5
+      opp_touch_weight: 0.6
+      closeness_weight: 1.4
+    opponent_mix:
+      self_play: 0.45
+      weak: 0.1
+      strong: 0.35
+      external: 0.10
+    external_pool:
+      sampling: "pfsp_mid"
+      pfsp_target: 0.75
+      pfsp_temperature: 0.20
+    self_play_sampling: ucb
+      
+  - name: phase4_league_pfsp_mid
+    until_episode: 33000
+    env_mode: NORMAL
+    step_count: 250
+    noise: 0.10
+    reward_overrides:
+      use_potential_shaping: true
+      progress_weight: 0.5
+      opp_touch_weight: 0.4
+    opponent_mix:
+      self_play: 0.4
+      external: 0.2
+      weak: 0.1
+      strong: 0.3
+    external_pool:
+      pfsp_target: 0.75
+      pfsp_temperature: 0.20
+    self_play_sampling: pfsp_mid
+
+  - name: phase4_league_ucb_cover
+    until_episode: 40000
+    env_mode: NORMAL
+    step_count: 250
+    noise: 0.09
+    reward_overrides:
+      use_potential_shaping: true
+      progress_weight: 0.5
+      opp_touch_weight: 0.5
+    opponent_mix:
+      self_play: 0.4
+      external: 0.25
+      weak: 0.05
+      strong: 0.3
+    external_pool:
+      sampling: "pfsp_mid"
+    self_play_sampling: ucb
+
+  - name: phase5_league_psro
+    until_episode: 52000
+    env_mode: NORMAL
+    step_count: 250
+    noise: 0.07
+    reward_overrides:
+      use_potential_shaping: true
+      progress_weight: 0.5
+      opp_touch_weight: 0.6
+    opponent_mix:
+      self_play: 0.4
+      external: 0.25
+      weak: 0.05
+      strong: 0.3
+    external_pool:
+      sampling: "ucb"
+    self_play_sampling: meta
+
+  - name: phase6_polish_deterministic
+    until_episode: 55000
+    env_mode: NORMAL
+    step_count: 250
+    noise: 0.01
+    reward_overrides:
+      use_potential_shaping: true
+      progress_weight: 0.5
+      opp_touch_weight: 0.6
+    opponent_mix:
+      self_play: 0.35
+      external: 0.3
+      weak: 0.05
+      strong: 0.3
+    self_play_sampling: meta

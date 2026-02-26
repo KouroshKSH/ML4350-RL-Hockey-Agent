@@ -1,0 +1,23 @@
+Bootstrap: docker
+From: python:3.11-slim
+
+%files
+    # This copies your requirements file from the host into the container
+    requirements.txt /requirements.txt
+
+%post
+    # 1. Install system dependencies (REQUIRED for Box2D and building wheels)
+    apt-get update && apt-get install -y swig build-essential
+    
+    # 2. Upgrade pip to avoid old-version headaches
+    pip install --no-cache-dir --upgrade pip
+
+    # 3. Install from your frozen requirements
+    pip install --no-cache-dir -r /requirements.txt
+
+%environment
+    export LC_ALL=C
+    export PATH=/usr/local/bin:$PATH
+
+%help
+    This container provides a locked-down, reproducible environment for the RL Hockey Project, team ShaBin (members: Kourosh Sharifi and Abtin Mogharabin).

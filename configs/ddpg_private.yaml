@@ -1,0 +1,147 @@
+algo: "DDPG"
+env: "hockey"
+user: "user"
+seed: 10
+
+episodes: 10000
+step_count: 250
+action_dim: 4
+
+gamma: 0.99
+tau: 0.005
+
+lr: 0.0003
+batch_size: 256
+buffer_size: 1000000
+window_size: 100
+
+warmup_steps: 10000
+updates_per_step: 1
+checkpoint_interval_episodes: 200
+
+# DDPG exploration noise scale (overridden per-phase below if 'noise' is set in phases)
+noise: 0.20
+
+exploration:
+  type: "pink" 
+  pink_rows: 16
+  reset_each_episode: true
+
+obs_norm:
+  enabled: true
+  clip: 5.0
+  update: true
+
+symmetry:
+  enabled: true
+  mode: "flip_y"
+  prob: 0.5
+
+opponent_mix:
+  weak: 0.35
+  strong: 0.35
+  self_play: 0.30
+
+self_play:
+  enabled: true
+  snapshot_start_episode: 2600
+  snapshot_interval_episodes: 200
+  max_pool_size: 20
+  elite_size: 5
+  sample_uniform_prob: 0.10
+  ucb_beta: 0.50
+  deterministic_opponent: true
+  sampling: "pfsp_mid"
+  pfsp_power: 1.0
+  pfsp_target: 0.5
+  pfsp_temperature: 0.15
+  discount_stats: true
+  discount_factor: 0.997
+
+curriculum:
+  enabled: true
+  self_play_ramp_episodes: 1000
+
+psro:
+  enabled: true
+  start_episode: 3500
+  update_interval_episodes: 600
+  max_league_size: 6
+  games_per_match: 3
+  replicator_iters: 200
+  replicator_lr: 2.0
+  uniform_prob: 0.10
+  step_count: 250
+
+reward:
+  touch_bonus: 0.5
+  puck_direction_weight: 0.1
+  action_l2_weight: 0.0005
+  danger:
+    enabled: false
+    weight: 0.05
+    x_threshold: -10.0
+    vx_threshold: -0.1
+
+eval:
+  enabled: true
+  interval_episodes: 200
+  episodes_per_opponent: 50
+  opponents: ["weak", "strong", "self_play"]
+
+wandb_project: "RL-hockey"
+
+phases:
+  - name: "phase1_shooting"
+    until_episode: 600
+    env_mode: "TRAIN_SHOOTING"
+    step_count: 80
+    noise: 0.20
+    opponent_mix: {weak: 0.0, strong: 1.0, self_play: 0.0}
+    reward_overrides: {touch_bonus: 0.7, puck_direction_weight: 0.2}
+
+  - name: "phase1_defense"
+    until_episode: 1200
+    env_mode: "TRAIN_DEFENSE"
+    step_count: 80
+    noise: 0.20
+    opponent_mix: {weak: 0.0, strong: 1.0, self_play: 0.0}
+
+  - name: "phase2_bots"
+    until_episode: 2600
+    env_mode: "NORMAL"
+    step_count: 250
+    noise: 0.20
+    opponent_mix: {weak: 0.25, strong: 0.75, self_play: 0.0}
+
+  - name: "phase3_league_pfsp_mid"
+    until_episode: 5000
+    env_mode: "NORMAL"
+    step_count: 250
+    noise: 0.12
+    opponent_mix: {weak: 0.2, strong: 0.4, self_play: 0.4}
+    self_play_sampling: "pfsp_mid"
+
+  - name: "phase3_league_ucb_cover"
+    until_episode: 6500
+    env_mode: "NORMAL"
+    step_count: 250
+    noise: 0.10
+    opponent_mix: {weak: 0.15, strong: 0.35, self_play: 0.5}
+    self_play_sampling: "ucb"
+
+  - name: "phase4_league_psro"
+    until_episode: 9500
+    env_mode: "NORMAL"
+    step_count: 250
+    noise: 0.08
+    opponent_mix: {weak: 0.1, strong: 0.3, self_play: 0.6}
+    self_play_sampling: "meta"
+
+  - name: "phase5_polish_low_noise"
+    until_episode: 10000
+    env_mode: "NORMAL"
+    step_count: 250
+    noise: 0.05
+    opponent_mix: {weak: 0.1, strong: 0.3, self_play: 0.6}
+    self_play_sampling: "meta"

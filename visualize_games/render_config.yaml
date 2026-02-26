@@ -1,0 +1,14 @@
+# provide the path to specific `.pkl` file(s) and/or the folders containing them
+# the folders can point to a completely different directory, as long as there are `.pkl` files in them
+# the aim is to have a script that can both render specific `.pkl` files or render in bulk
+# do NOT forget to put the paths in double quotes
+
+# provide the relative path of the `.pkl` file only (you can list multiple files here)
+pkl_files:
+  - "visualize_games/downloaded_games/Carl-Bench-DreamerV3_ShaBin-TQC211705_2026-02-10_18-10-00_71fcfcce-5104-4a08-a903-a4c210e48668.pkl"
+  - "visualize_games/downloaded_games/Carl-Bench-DreamerV3_ShaBin-TQC211705_2026-02-10_18-08-35_6dbdb46c-2409-49c4-b729-9802fe3dc555.pkl"
+  - "visualize_games/downloaded_games/cb1abc8e-7f5b-41c9-803d-73b5f3e052c4.pkl"
+
+# provide the relative path of the folders only
+folders:
+  - "internal_leaderboard/trajectories"

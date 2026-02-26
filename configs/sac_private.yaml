@@ -1,0 +1,205 @@
+algo: "SAC"
+env: "hockey"
+user: "user"
+seed: 10
+
+episodes: 20000
+step_count: 250
+action_dim: 4
+
+gamma: 0.99
+tau: 0.005
+
+# For SAC: noise > 0 => stochastic rollouts, noise == 0 => deterministic rollouts.
+noise: 1.0
+
+lr: 0.0003
+batch_size: 256
+buffer_size: 1000000
+window_size: 100
+warmup_steps: 20000
+updates_per_step: 1
+checkpoint_interval_episodes: 200
+
+sac:
+  alpha: "auto"
+  init_alpha: 0.2
+  actor_lr: 0.0003
+  critic_lr: 0.0003
+  actor_hidden_dim: 256
+  critic_hidden_dim: 256
+  target_entropy: null
+
+obs_norm:
+  enabled: true
+  clip: 5.0
+  update: true
+
+symmetry:
+  enabled: true
+  mode: "flip_y"
+  prob: 0.5
+
+opponent_mix:
+  weak: 0.35
+  strong: 0.35
+  self_play: 0.30
+
+self_play:
+  enabled: true
+  snapshot_start_episode: 4500
+  snapshot_interval_episodes: 800
+  max_pool_size: 20
+  elite_size: 5
+  sample_uniform_prob: 0.10
+  ucb_beta: 0.50
+  deterministic_opponent: true
+  sampling: "pfsp_mid"
+  pfsp_power: 1.0
+  pfsp_target: 0.5
+  pfsp_temperature: 0.15
+  discount_stats: true
+  discount_factor: 0.997
+
+curriculum:
+  enabled: true
+  self_play_ramp_episodes: 2000
+
+psro:
+  enabled: true
+  # Start PSRO after snapshots exist and the pool has some diversity
+  start_episode: 5500
+  update_interval_episodes: 800
+  max_league_size: 6
+  games_per_match: 3
+  replicator_iters: 200
+  replicator_lr: 2.0
+  uniform_prob: 0.10
+  step_count: 250
+
+reward:
+  terminal_win_reward: 10.0
+  closeness_weight: 1.0
+
+  touch_bonus: 0.5
+  opp_touch_weight: 0.0
+
+  use_potential_shaping: false
+  progress_weight: 0.0
+
+  puck_direction_weight: 0.1
+
+  shot_bonus: 0.0
+  shot_gate_x: 0.0
+  shot_gate_vx: 0.0
+  shot_gate_abs_y: 1.5
+
+  action_l2_weight: 0.0005
+
+  danger:
+    enabled: false
+    weight: 0.05
+    x_threshold: -10.0
+    vx_threshold: -0.1
+
+eval:
+  enabled: true
+  interval_episodes: 200
+  episodes_per_opponent: 50
+  opponents: ["weak", "strong", "self_play"]
+
+wandb_project: "RL-hockey-V2"
+
+episodes: 35000
+phases:
+  - name: phase1_shooting
+    until_episode: 1000
+    env_mode: TRAIN_SHOOTING
+    step_count: 80
+    reward_overrides:
+      touch_bonus: 0.7
+      puck_direction_weight: 0.2
+      shot_bonus: 0.05
+    noise: 1.0
+    opponent_mix:
+      strong: 1.0
+
+  - name: phase1_defense
+    until_episode: 2000
+    env_mode: TRAIN_DEFENSE
+    step_count: 80
+    noise: 1.0
+    opponent_mix:
+      strong: 1.0
+    
+  - name: phase2_bots_anchor
+    until_episode: 7000
+    env_mode: NORMAL
+    step_count: 300
+    noise: 1.0
+    reward_overrides:
+      opp_touch_weight: 0.3
+    opponent_mix:
+      weak: 0.25
+      strong: 0.75
+      self_play: 0.0
+      
+  - name: phase3_league_pfsp_mid
+    until_episode: 14000
+    env_mode: NORMAL
+    step_count: 300
+    noise: 1.0
+    reward_overrides:
+      use_potential_shaping: true
+      progress_weight: 0.5
+      opp_touch_weight: 0.5
+    opponent_mix:
+      self_play: 0.40
+      weak: 0.20
+      strong: 0.40
+    self_play_sampling: pfsp_mid
+
+  - name: phase3_league_ucb_cover
+    until_episode: 21000
+    env_mode: NORMAL
+    step_count: 300
+    noise: 1.0
+    reward_overrides:
+      use_potential_shaping: true
+      progress_weight: 0.5
+      opp_touch_weight: 0.6
+    opponent_mix:
+      self_play: 0.50
+      weak: 0.15
+      strong: 0.35
+    self_play_sampling: ucb
+
+  - name: phase4_league_psro
+    until_episode: 33000
+    env_mode: NORMAL
+    step_count: 350
+    noise: 1.0
+    reward_overrides:
+      use_potential_shaping: true
+      progress_weight: 0.5
+      opp_touch_weight: 0.7
+    opponent_mix:
+      self_play: 0.60
+      weak: 0.10
+      strong: 0.30
+    self_play_sampling: meta
+
+  - name: phase5_polish_deterministic
+    until_episode: 35000
+    env_mode: NORMAL
+    step_count: 350
+    noise: 0.0
+    reward_overrides:
+      use_potential_shaping: true
+      progress_weight: 0.5
+      opp_touch_weight: 0.7
+    opponent_mix:
+      self_play: 0.65
+      weak: 0.05
+      strong: 0.30
+    self_play_sampling: meta
