@@ -2,6 +2,10 @@
 
 This repository contains our contribution to the Reinforcement Learning Tournament of the University of Tübingen (Winter Term 2025/26) for the course **ML4350**, presented by [Prof. Dr. Georg Martius](https://uni-tuebingen.de/fakultaeten/mathematisch-naturwissenschaftliche-fakultaet/fachbereiche/informatik/lehrstuehle/distributed-intelligence/team/prof-dr-georg-martius/).
 
+![Laser Hockey Gameplay](https://github.com/KouroshKSH/ML4350-RL-Hockey-Agent/blob/master/misc/example_gameplay.gif)
+
+> An example gameplay of our agent against its opponent.
+
 Our project focuses on training hockey agents to play the [Laser Hockey](https://github.com/antic11d/laser-hockey-env.git) game using off-policy algorithms and multi-agent training system.
 
 ![Laser Hockey Gameplay](assets/gameplay.gif "ShaBin Agent Gameplay")
@@ -21,6 +25,10 @@ Out of the competing teams, our solution was awarded **5th place**.
 - **Reward Design:** Potential-based reward shaping, kinematic progress weights, and action $L_2$ regularization.
 - **Self-Play:** Opponent sampling via Prioritized Fictitious Self-Play (PFSP) and Upper Confidence Bound (UCB).
 - **League Training:** A "lite" version of Policy-Space Response Oracles (PSRO) using Replicator Dynamics to ensure meta-strategy stability.
+
+![Project Diagram](https://github.com/KouroshKSH/ML4350-RL-Hockey-Agent/blob/master/misc/RL_project_diagram.png)
+
+> A high-level design of the project's structure.
 
 ## Project Structure
 Detailed information regarding the algorithms, ablation studies, and training results can be found in our **[Final Project Report](report.pdf)**.
