@@ -9,24 +9,24 @@ Our project focuses on training hockey agents to play the [Laser Hockey](https:/
 ## Tournament Results
 Out of the competing teams, our solution was awarded **5th place**. 
 
-| Rank | Algorithm | Author |
-| :--- | :--- | :--- |
-| 5 | [TQC](agent_1/tqc_agent.py) | Abtin Mogharabin |
-| 5 | [SAC](agent_1/sac_agent.py) | Kourosh Sharifi |
+| Algorithm | Author |
+| :--- | :--- |
+| [TQC](https://github.com/KouroshKSH/ML4350-RL-Hockey-Agent/blob/master/agent/tqc_agent.py) | Abtin Mogharabin |
+| [SAC](https://github.com/KouroshKSH/ML4350-RL-Hockey-Agent/blob/master/agent/sac_agent.py) | Kourosh Sharifi |
 
-*The official certificate for this achievement will be available [here]().*
+> The official certificate for this achievement will be available [here]().
 
-## Core Features
+## Overview
 - **Algorithms:** Implementation of Truncated Quantile Critics (TQC) and Soft Actor-Critic (SAC).
 - **Reward Design:** Potential-based reward shaping, kinematic progress weights, and action $L_2$ regularization.
-- **Self-Play Curriculum:** Opponent sampling via Prioritized Fictitious Self-Play (PFSP) and Upper Confidence Bound (UCB).
+- **Self-Play:** Opponent sampling via Prioritized Fictitious Self-Play (PFSP) and Upper Confidence Bound (UCB).
 - **League Training:** A "lite" version of Policy-Space Response Oracles (PSRO) using Replicator Dynamics to ensure meta-strategy stability.
 
 ## Project Structure
 Detailed information regarding the algorithms, ablation studies, and training results can be found in our **[Final Project Report](report.pdf)**.
 
 If you wish to replicate our environment setup or training pipeline on a cluster (TCML), please refer to the file below:
-👉 **[instructions.md](instructions.md)**
+**[instructions.md](https://github.com/KouroshKSH/ML4350-RL-Hockey-Agent/blob/master/instructions.md)**
 
 ## Citation
 If you find this work useful for your research or projects, please consider citing it:
