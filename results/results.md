@@ -1,0 +1,2 @@
+# Overview
+This folder contains the best weights we have per algorithm. We have intentionally avoided the inclusion of all weights from our previous training procedures to save up on space and privacy.
