@@ -27,7 +27,7 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 print(f"Project root:\n{PROJECT_ROOT}")
 sys.path.append(PROJECT_ROOT)
 
-import hockey.hockey_env as h_env
+import hockey.hockey_env_original as h_env
 from agent.external_models import actor_spec_from_config, load_obs_norm_npz
 from agent.normalization import RunningMeanStd  # type compatibility
 
