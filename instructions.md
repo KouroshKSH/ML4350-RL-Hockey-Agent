@@ -183,8 +183,3 @@ wandb: Synced 5 W&B file(s), 100 media file(s), 0 artifact file(s) and 9 other f
 wandb: Find logs at: ./wandb/run-.../logs
 ```
 
-### WandB Integration
-
-Check the `.err` file for the WandB URL. You can track the `Success_Rate`, `Mean_Q`, and `Loss` curves live in the browser. Or open the workspace with [this link](https://wandb.ai/kourosh-sharifi-tuebingen-university/RL-hockey?nw=nwuserkouroshsharifitue).
-
-**Note:** For more details on cluster resource limits (CPU/Memory), please refer to the comments in **Pull Request #1**, found [on GitHub](https://github.com/KouroshKSH/RL-project-temp/pull/1).
